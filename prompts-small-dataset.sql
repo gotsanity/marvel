@@ -28,14 +28,15 @@
 -- ********************************************************************************
 -- Find the average IMDB rating of every movie an actor was in. (21 rows)
 -- ********************************************************************************
-SELECT 
-    Movie.Title,
-    ActorName,
-    Avg(IMDBRating) as AvgIMDBRating
-FROM Movie
-INNER JOIN Role ON Role.MovieID = Movie.MovieID
-INNER JOIN Actor ON Actor.ActorID = Role.ActorID
-GROUP BY Title, ActorName;
+-- SELECT 
+--     Actor.ActorID,
+--     ActorName,
+--     Avg(IMDBRating) as AvgIMDBRating
+-- FROM Movie
+-- INNER JOIN Role ON Role.MovieID = Movie.MovieID
+-- INNER JOIN Actor ON Actor.ActorID = Role.ActorID
+-- GROUP BY Actor.ActorID, ActorName
+-- ORDER BY ActorName ASC;
 
 
 -- ********************************************************************************
@@ -43,7 +44,12 @@ GROUP BY Title, ActorName;
 -- only appears once per phase. (13 rows)
 -- ********************************************************************************
 
-
+-- SELECT DISTINCT
+--     ActorName
+-- FROM Movie
+-- INNER JOIN Role ON Role.MovieID = Movie.MovieID
+-- INNER JOIN Actor ON Actor.ActorID = Role.ActorID
+-- WHERE Movie.PhaseID = 1;
 
 -- ********************************************************************************
 -- Find the names and number of times each actor has appeared in a movie with 
@@ -51,3 +57,23 @@ GROUP BY Title, ActorName;
 -- HINT: this will require a subquery. First find all movies Evans was in,
 -- then use it to filter a second query. (19 Rows, Samuel L. Jackson has 7 appearances)
 -- ********************************************************************************
+-- SELECT
+--     ActorName,
+--     Count() as NumAppearance
+-- FROM Actor
+-- INNER JOIN Role ON Role.ActorID = Actor.ActorID
+-- INNER JOIN Movie ON Movie.MovieID = Role.MovieID
+-- WHERE
+--     Role.MovieID IN (
+--         SELECT DISTINCT MovieID FROM Role
+--         INNER JOIN Actor ON Actor.ActorID = Role.ActorID
+--         WHERE Actor.ActorName = 'Chris Evans'    
+--     )
+--     AND Actor.ActorName <> 'Chris Evans'
+-- GROUP BY ActorName
+-- ORDER BY NumAppearance DESC;
+
+
+
+
+
