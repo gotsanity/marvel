@@ -1,12 +1,14 @@
 -- marvel-additional-data.sql
--- Run AFTER marvel.sql (requires SQLite 3.35+ for ALTER TABLE ... DROP COLUMN).
+-- Run AFTER marvel.sql. Compatible with SQLite 3.26.0 and later (no ALTER TABLE ... DROP COLUMN).
 -- Extends the schema (all tables in 3NF) and adds every MCU theatrical film released through 2026-11-05.
 -- Sources: Wikipedia film, actor and character articles; List of MCU film actors; Box Office Mojo / The Numbers;
 -- Rotten Tomatoes, Metacritic and CinemaScore as cited on Wikipedia. Researched November 2026.
 -- Box office for Spider-Man: Brand New Day and all IMDb / Rotten Tomatoes scores change over time.
 -- NULL means the value is not published in a reliable source (never estimated).
 
-PRAGMA foreign_keys = ON;
+-- Foreign-key enforcement is off while tables are rebuilt (SQLite's standard rebuild procedure);
+-- PRAGMA foreign_key_check at the end lists any violation (it returns no rows when the data is clean).
+PRAGMA foreign_keys = OFF;
 BEGIN TRANSACTION;
 
 ------------------------------------------------------------------
@@ -201,7 +203,32 @@ UPDATE Movie SET ReleaseDate = '2015-07-17', RuntimeMinutes = 117, MPAARating = 
 UPDATE Movie SET ReleaseDate = '2018-07-06', RuntimeMinutes = 118, MPAARating = 'PG-13', IMDbID = 'tt5095030', DistributorID = 4, BudgetMinUSD = 130000000, BudgetMaxUSD = 195000000, OpeningWeekendDomesticUSD = 75812205, DomesticGrossUSD = 216648740, WorldwideGrossUSD = 622674139, RTCriticsPct = 87, RTAudiencePct = 78, MetacriticScore = 70, CinemaScore = 'A-' WHERE MovieID = 20;
 UPDATE Movie SET ReleaseDate = '2016-11-04', RuntimeMinutes = 115, MPAARating = 'PG-13', IMDbID = 'tt1211837', DistributorID = 4, BudgetMinUSD = 165000000, BudgetMaxUSD = 236600000, OpeningWeekendDomesticUSD = 85058311, DomesticGrossUSD = 232641920, WorldwideGrossUSD = 677796833, RTCriticsPct = 89, RTAudiencePct = 86, MetacriticScore = 72, CinemaScore = 'A' WHERE MovieID = 21;
 UPDATE Movie SET ReleaseDate = '2018-02-16', RuntimeMinutes = 134, MPAARating = 'PG-13', IMDbID = 'tt1825683', DistributorID = 4, BudgetMinUSD = 200000000, BudgetMaxUSD = 200000000, OpeningWeekendDomesticUSD = 202003951, DomesticGrossUSD = 700426566, WorldwideGrossUSD = 1349926083, RTCriticsPct = 96, RTAudiencePct = 79, MetacriticScore = 88, CinemaScore = 'A+' WHERE MovieID = 22;
-ALTER TABLE Movie DROP COLUMN ReleaseYear;
+-- Remove ReleaseYear by rebuilding Movie (ALTER TABLE ... DROP COLUMN needs SQLite 3.35+).
+CREATE TABLE Movie_new (
+  MovieID                   INTEGER PRIMARY KEY,
+  Title                     TEXT    NOT NULL UNIQUE,
+  UniverseYear              INTEGER,
+  IMDBRating                REAL,
+  PhaseID                   INTEGER NOT NULL REFERENCES Phase(PhaseID),
+  ReleaseDate               TEXT,
+  RuntimeMinutes            INTEGER,
+  MPAARating                TEXT,
+  IMDbID                    TEXT,
+  DistributorID             INTEGER REFERENCES Distributor(DistributorID),
+  BudgetMinUSD              INTEGER,
+  BudgetMaxUSD              INTEGER,
+  OpeningWeekendDomesticUSD INTEGER,
+  DomesticGrossUSD          INTEGER,
+  WorldwideGrossUSD         INTEGER,
+  RTCriticsPct              INTEGER,
+  RTAudiencePct             INTEGER,
+  MetacriticScore           INTEGER,
+  CinemaScore               TEXT
+);
+INSERT INTO Movie_new (MovieID, Title, UniverseYear, IMDBRating, PhaseID, ReleaseDate, RuntimeMinutes, MPAARating, IMDbID, DistributorID, BudgetMinUSD, BudgetMaxUSD, OpeningWeekendDomesticUSD, DomesticGrossUSD, WorldwideGrossUSD, RTCriticsPct, RTAudiencePct, MetacriticScore, CinemaScore)
+  SELECT MovieID, Title, UniverseYear, IMDBRating, PhaseID, ReleaseDate, RuntimeMinutes, MPAARating, IMDbID, DistributorID, BudgetMinUSD, BudgetMaxUSD, OpeningWeekendDomesticUSD, DomesticGrossUSD, WorldwideGrossUSD, RTCriticsPct, RTAudiencePct, MetacriticScore, CinemaScore FROM Movie;
+DROP TABLE Movie;
+ALTER TABLE Movie_new RENAME TO Movie;
 INSERT INTO Movie (MovieID, Title, UniverseYear, IMDBRating, PhaseID, ReleaseDate, RuntimeMinutes, MPAARating, IMDbID, DistributorID, BudgetMinUSD, BudgetMaxUSD, OpeningWeekendDomesticUSD, DomesticGrossUSD, WorldwideGrossUSD, RTCriticsPct, RTAudiencePct, MetacriticScore, CinemaScore) VALUES
   (23, 'Spider-Man: Far From Home', 2024, 7.3, 3, '2019-07-02', 129, 'PG-13', 'tt6320628', 2, 160000000, 160000000, 92579212, 391283774, 1132723226, 91, 95, 69, 'A'),
   (24, 'Black Widow', 2016, 6.6, 4, '2021-07-09', 134, 'PG-13', 'tt3480822', 4, 288500000, 288500000, 80366312, 183651655, 379751655, 79, 91, 68, 'A-'),
@@ -1155,3 +1182,5 @@ INSERT INTO CharacterTeam (CharacterID, TeamID) VALUES
   (78, 12);
 
 COMMIT;
+PRAGMA foreign_keys = ON;
+PRAGMA foreign_key_check;
